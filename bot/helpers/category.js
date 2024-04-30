@@ -3,11 +3,15 @@ import User from "../../models/User.js";
 import Category from "../../models/Category.js";
 import { categoryInlineKeyboards, userKeyBoards } from "../config/keyboards.js";
 
-export default async function getCategories(msg) {
-  const chatId = msg.chat.id;
-  const [user, categories] = await Promise.all([
+export async function getCategories(chatId, page = 1) {
+  const LIMIT = 2;
+  const [user, categories, categoriesCount] = await Promise.all([
     User.findOne({ chatId }, { admin: 1 }).lean(),
-    Category.find(),
+    Category.find()
+      .limit(LIMIT)
+      .skip((page - 1) * LIMIT)
+      .lean(),
+    Category.countDocuments(),
   ]);
 
   const groupedData = categories.reduce((acc, obj, index) => {
@@ -22,12 +26,18 @@ export default async function getCategories(msg) {
     return acc;
   }, []);
 
-  bot.sendMessage(chatId, `Kategoriyalar: ${categories.length}`, {
-    reply_markup: {
-      remove_keyboard: true,
-      inline_keyboard: categoryInlineKeyboards(groupedData, user.admin),
-    },
-  });
+  bot.sendMessage(
+    chatId,
+    `Kategoriyalar: ${categoriesCount}ta \nSahifalar soni: ${Math.ceil(
+      categoriesCount / LIMIT
+    )}ta`,
+    {
+      reply_markup: {
+        remove_keyboard: true,
+        inline_keyboard: categoryInlineKeyboards(groupedData, user.admin, page),
+      },
+    }
+  );
 }
 
 export const addCategory = async (chatId) => {
@@ -54,5 +64,35 @@ export const createCategory = async (msg) => {
   });
   await doc.save();
   bot.sendMessage(chatId, "Kategoriya qo'shildi");
-  return getCategories(msg);
+  return getCategories(chatId);
 };
+
+export const paginationCategory = async (chatId, data) => {
+  const LIMIT = 2;
+  let [user, categoriesCount] = await Promise.all([
+    User.findOne({ chatId }),
+    Category.countDocuments(),
+  ]);
+  const pages = Math.ceil(categoriesCount / LIMIT);
+  let page = user.action.includes("category-") ? +user.action.split("-")[1] : 1;
+
+  if (data === "next_category") {
+    if (!(page < pages)) {
+      return;
+    }
+    page++;
+  }
+  if (data === "back_category") {
+    if (page > 1) {
+      page--;
+    } else {
+      return;
+    }
+  }
+
+  user.action = `category-${page}`;
+  await user.save();
+  return getCategories(chatId, page);
+};
+
+export const showCategory = async (chatId, id) => {};

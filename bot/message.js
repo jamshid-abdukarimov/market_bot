@@ -2,7 +2,7 @@ import start, { requestContact } from "./helpers/start.js";
 import { bot } from "../index.js";
 import User from "../models/User.js";
 import getUsers from "./helpers/users.js";
-import getCategories, { createCategory } from "./helpers/category.js";
+import { getCategories, createCategory } from "./helpers/category.js";
 
 export default function () {
   bot.on("message", async (msg) => {
@@ -22,7 +22,7 @@ export default function () {
         return getUsers(msg);
       }
       if (text === "Barcha kataloglar") {
-        return getCategories(msg);
+        return getCategories(chatId);
       }
       if (user.action === "add_category") {
         return createCategory(msg);

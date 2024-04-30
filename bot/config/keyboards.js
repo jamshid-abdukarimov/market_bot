@@ -48,13 +48,17 @@ export const contactKeyboard = [
   ],
 ];
 
-export const categoryInlineKeyboards = (categories, admin) => {
+export const categoryInlineKeyboards = (categories, admin, page = 1) => {
   return [
     ...categories,
     [
       {
         text: "Ortga",
         callback_data: "back_category",
+      },
+      {
+        text: `${page}-sahifa`,
+        callback_data: "null",
       },
       {
         text: "Oldinga",
